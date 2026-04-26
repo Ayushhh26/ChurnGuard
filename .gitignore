@@ -239,3 +239,6 @@ dbt/churnguard/dbt_packages/
 
 # Snowflake credentials
 snowflake/.env
+
+# Internal planning doc — local only
+PLAN.md
