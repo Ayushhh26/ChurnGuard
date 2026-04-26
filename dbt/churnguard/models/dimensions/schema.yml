@@ -1,0 +1,43 @@
+version: 2
+
+models:
+  - name: dim_customer
+    description: "Customer demographics — one row per customer."
+    columns:
+      - name: customer_key
+        description: "Surrogate key"
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: "Natural key from source"
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_contract
+    description: "Distinct contract type and tenure bucket combinations."
+    columns:
+      - name: contract_key
+        description: "Surrogate key"
+        tests:
+          - unique
+          - not_null
+      - name: contract
+        tests:
+          - not_null
+      - name: tenure_bucket
+        tests:
+          - not_null
+
+  - name: dim_payment
+    description: "Distinct payment method and paperless billing combinations."
+    columns:
+      - name: payment_key
+        description: "Surrogate key"
+        tests:
+          - unique
+          - not_null
+      - name: payment_method
+        tests:
+          - not_null
