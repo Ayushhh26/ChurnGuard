@@ -1,42 +1,63 @@
 # ChurnGuard — Customer Retention Analytics Platform
 
-An end-to-end data engineering project that identifies customer churn, quantifies revenue loss, and surfaces high-risk segments using a modern data stack.
+An end-to-end data engineering project that ingests raw customer data, engineers churn features through a medallion architecture, and surfaces revenue-at-risk insights using a modern, fully free stack.
 
 ---
 
 ## Architecture
 
 ```
-Kaggle CSV (Telco Churn Dataset)
-        |
-        v
-Databricks Community Edition (PySpark)
-  ├── Bronze  →  raw ingestion
-  ├── Silver  →  cleaning & standardization
-  └── Gold    →  feature engineering → export Parquet
+Kaggle CSV  (Telco Customer Churn — 7,043 rows)
+      |
+      v
+Databricks Free Edition  (PySpark + Unity Catalog)
+  ├── Bronze  →  raw ingestion, Delta table, no transformations
+  ├── Silver  →  TotalCharges cast, SeniorCitizen standardized, nulls dropped → 7,032 rows
+  └── Gold    →  tenure_bucket, churn_flag, revenue_lost → export Parquet
                           |
-              +-----------+-----------+
-              |                       |
-   dbt + DuckDB (default)    dbt + Snowflake (production)
-   local, free forever        cloud warehouse, fully documented
-              |                       |
-              +-----------+-----------+
+                          v
+               dbt Core  +  DuckDB  (local, free forever)
+                 ├── stg_customers     (staging view)
+                 ├── dim_customer      (demographics)
+                 ├── dim_contract      (contract type + tenure)
+                 ├── dim_payment       (payment method)
+                 └── fact_churn        (churn metrics + FK joins)
                           |
-                   Analytics Layer
-                  (SQL queries + Snowsight)
+                          v
+                  analytics/queries.sql
+            (churn rate, revenue at risk, segmentation)
 ```
 
 ---
 
 ## Tech Stack
 
-| Layer | Tool |
-|-------|------|
-| Processing | Databricks Community Edition (PySpark) |
-| Transformation | dbt Core |
-| Local Warehouse | DuckDB |
-| Cloud Warehouse | Snowflake (trial) |
-| Analytics / BI | Snowflake Snowsight |
+| Layer | Tool | Why |
+|-------|------|-----|
+| Distributed processing | Databricks Free Edition (PySpark) | Serverless Spark, Unity Catalog volumes |
+| Transformation | dbt Core | Modular SQL, built-in testing, free |
+| Local warehouse | DuckDB | Reads Parquet natively, zero setup, free forever |
+| Cloud warehouse (reference) | Snowflake | DDL + profiles documented for production path |
+
+> DuckDB is the default dbt target so anyone can clone and run `dbt run` with zero account signups.
+> Snowflake DDL and profile config are committed as reference artifacts in `snowflake/`.
+
+---
+
+## Star Schema
+
+```
+              dim_customer
+             (demographics)
+                   |
+dim_contract ── fact_churn ── dim_payment
+(contract type,    |         (payment method,
+ tenure bucket)    |          paperless billing)
+                   |
+            churn_flag
+            monthly_charges
+            revenue_lost
+```
 
 ---
 
@@ -45,98 +66,90 @@ Databricks Community Edition (PySpark)
 ```
 ChurnGuard/
 ├── data/
-│   ├── raw/               # download dataset here (see below)
-│   └── gold/              # exported Parquet from Databricks
+│   ├── raw/                         # telco_churn.csv (gitignored)
+│   └── gold/                        # Parquet exported from Databricks (gitignored)
 ├── databricks/
-│   ├── 01_bronze_ingestion.ipynb
-│   ├── 02_silver_cleaning.ipynb
-│   └── 03_gold_features.ipynb
+│   ├── 01_bronze_ingestion.py       # CSV → Bronze Delta table
+│   ├── 02_silver_cleaning.py        # cleaning + snake_case rename
+│   └── 03_gold_features.py          # feature engineering + Parquet export
+├── dbt/churnguard/
+│   ├── dbt_project.yml
+│   ├── profiles.yml.example         # Snowflake + DuckDB config template
+│   └── models/
+│       ├── staging/
+│       │   ├── stg_customers.sql
+│       │   └── schema.yml
+│       ├── dimensions/
+│       │   ├── dim_customer.sql
+│       │   ├── dim_contract.sql
+│       │   ├── dim_payment.sql
+│       │   └── schema.yml
+│       └── facts/
+│           ├── fact_churn.sql
+│           └── schema.yml
 ├── snowflake/
-│   ├── setup.sql          # DDL for all schemas and tables
-│   └── screenshots/       # Snowflake pipeline proof
-├── dbt/
-│   └── churnguard/
-│       ├── models/
-│       │   ├── staging/
-│       │   ├── dimensions/
-│       │   └── facts/
-│       └── schema.yml     # dbt tests
-├── analytics/
-│   └── queries.sql        # churn rate, revenue at risk, segmentation
-└── README.md
+│   └── setup.sql                    # reference DDL (BRONZE/SILVER/GOLD/MARTS)
+└── analytics/
+    └── queries.sql                  # churn rate, revenue at risk, segmentation
 ```
 
 ---
 
-## Dataset
+## How to Run
 
-**Telco Customer Churn** — IBM / Kaggle
-
-Download from: https://www.kaggle.com/datasets/blastchar/telco-customer-churn
-
-Place the CSV at: `data/raw/telco_churn.csv`
-
----
-
-## How to Run Locally (DuckDB — no account needed)
+### Prerequisites
 
 ```bash
-# 1. Install dependencies
+git clone https://github.com/Ayushhh26/ChurnGuard.git
+cd ChurnGuard
+python3 -m venv .venv && source .venv/bin/activate
 pip install dbt-duckdb
-
-# 2. Export Gold Parquet from Databricks into data/gold/
-
-# 3. Run dbt (uses DuckDB by default)
-cd dbt/churnguard
-dbt run
-dbt test
 ```
 
----
+Download the dataset from [Kaggle](https://www.kaggle.com/datasets/blastchar/telco-customer-churn) and place it at `data/raw/telco_churn.csv`.
 
-## How to Run with Snowflake (Production)
+Run the three Databricks notebooks in order to produce the Gold Parquet, then download the output to `data/gold/`.
+
+### Run dbt (DuckDB — default)
 
 ```bash
-# 1. Install dependencies
-pip install dbt-snowflake
-
-# 2. Configure credentials (never committed)
-cp dbt/churnguard/profiles.yml.example dbt/churnguard/profiles.yml
-# edit profiles.yml with your Snowflake credentials
-
-# 3. Load data into Snowflake using snowflake/setup.sql
-
-# 4. Run dbt against Snowflake
 cd dbt/churnguard
-dbt run --target prod
-dbt test --target prod
+cp profiles.yml.example profiles.yml   # no edits needed for DuckDB
+dbt run --profiles-dir .
+dbt test --profiles-dir .
+```
+
+### Run dbt (Snowflake — production path)
+
+```bash
+cp dbt/churnguard/profiles.yml.example dbt/churnguard/profiles.yml
+# fill in Snowflake credentials under the prod target
+# load data using snowflake/setup.sql
+dbt run --target prod --profiles-dir .
 ```
 
 ---
 
-## Key Insights (from Telco dataset)
+## Key Insights
 
-- Overall churn rate: ~26%
-- Month-to-month contract customers churn at the highest rate
-- New customers (0–12 months tenure) are highest risk
-- Electronic check payment method correlates with higher churn
+| Metric | Value |
+|--------|-------|
+| Total customers | 7,032 |
+| Overall churn rate | **26.6%** |
+| Monthly revenue lost to churn | calculated per run |
+| Highest-risk segment | Month-to-month contracts (**42.7% churn**) |
+| Lowest-risk segment | Two-year contracts (**2.9% churn**) |
+| New customer churn (0–12 mo) | highest across tenure buckets |
 
 ---
 
-## Phases
+## dbt Test Coverage
 
-| Phase | Description | Status |
-|-------|-------------|--------|
-| 1 | Repo setup & project structure | ✅ Done |
-| 2 | Snowflake DDL | 🔜 |
-| 3 | Databricks Bronze layer | 🔜 |
-| 4 | Databricks Silver layer | 🔜 |
-| 5 | Databricks Gold layer + export | 🔜 |
-| 6 | Snowflake data loading | 🔜 |
-| 7 | dbt project init + profiles | 🔜 |
-| 8 | dbt staging model | 🔜 |
-| 9 | dbt dimension models | 🔜 |
-| 10 | dbt fact model | 🔜 |
-| 11 | dbt tests | 🔜 |
-| 12 | Analytics queries | 🔜 |
-| 13 | Documentation | 🔜 |
+| Model | Tests |
+|-------|-------|
+| stg_customers | unique, not_null, accepted_values |
+| dim_customer | unique + not_null on surrogate and natural keys |
+| dim_contract | unique + not_null on surrogate key |
+| dim_payment | unique + not_null on surrogate key |
+| fact_churn | not_null + FK relationships to all 3 dimensions |
+| **Total** | **22 tests — all passing** |
