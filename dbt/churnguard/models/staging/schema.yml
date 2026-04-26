@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: "Cleaned and renamed Gold layer data, ready for dimensional modeling."
+    columns:
+      - name: customer_id
+        description: "Unique customer identifier"
+        tests:
+          - unique
+          - not_null
+
+      - name: churn_flag
+        description: "1 if customer churned, 0 otherwise"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+
+      - name: monthly_charges
+        description: "Monthly recurring charge for the customer"
+        tests:
+          - not_null
