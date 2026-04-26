@@ -1,0 +1,32 @@
+churnguard:
+  target: dev   # default target — uses DuckDB locally, no account needed
+
+  outputs:
+
+    dev:
+      type: duckdb
+      path: churnguard.duckdb    # local DuckDB file, created automatically
+      threads: 4
+
+    prod:
+      type: snowflake
+      account: <your_account_id>         # e.g. xy12345.us-east-1
+      user: <your_username>
+      password: <your_password>
+      role: ACCOUNTADMIN
+      database: CHURNGUARD_DB
+      warehouse: CHURNGUARD_WH
+      schema: MARTS
+      threads: 4
+      client_session_keep_alive: false
+
+# ── Usage ──────────────────────────────────────────────────────────────────
+#
+# Copy this file to profiles.yml and fill in your Snowflake credentials.
+# profiles.yml is in .gitignore — never commit real credentials.
+#
+# Run with DuckDB (default):
+#   dbt run
+#
+# Run with Snowflake:
+#   dbt run --target prod
