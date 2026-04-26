@@ -1,0 +1,44 @@
+version: 2
+
+models:
+  - name: fact_churn
+    description: "Central fact table — one row per customer with churn metrics and FK references to all dimensions."
+    columns:
+      - name: customer_id
+        description: "Natural key"
+        tests:
+          - not_null
+
+      - name: churn_flag
+        description: "1 if churned, 0 otherwise"
+        tests:
+          - not_null
+
+      - name: monthly_charges
+        description: "Monthly recurring charge"
+        tests:
+          - not_null
+
+      - name: customer_key
+        description: "FK to dim_customer"
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_key
+
+      - name: contract_key
+        description: "FK to dim_contract"
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_contract')
+                field: contract_key
+
+      - name: payment_key
+        description: "FK to dim_payment"
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_payment')
+                field: payment_key
