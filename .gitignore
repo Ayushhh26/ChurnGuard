@@ -216,3 +216,26 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ── ChurnGuard project-specific ──────────────────────────────────────────────
+
+# Raw & generated data — download from Kaggle, don't commit large files
+data/raw/*.csv
+data/raw/*.zip
+data/gold/*.parquet
+data/gold/*.csv
+
+# dbt credentials — NEVER commit passwords
+dbt/churnguard/profiles.yml
+
+# dbt artifacts (generated at runtime)
+dbt/churnguard/target/
+dbt/churnguard/logs/
+dbt/churnguard/dbt_packages/
+
+# DuckDB database file (generated at runtime)
+*.duckdb
+*.duckdb.wal
+
+# Snowflake credentials
+snowflake/.env
