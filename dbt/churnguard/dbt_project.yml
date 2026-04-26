@@ -1,0 +1,22 @@
+name: 'churnguard'
+version: '1.0.0'
+config-version: 2
+
+profile: 'churnguard'
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  churnguard:
+    staging:
+      +materialized: view
+    dimensions:
+      +materialized: table
+    facts:
+      +materialized: table
