@@ -130,16 +130,62 @@ dbt run --target prod --profiles-dir .
 
 ---
 
-## Key Insights
+## Key Findings
 
-| Metric | Value |
-|--------|-------|
-| Total customers | 7,032 |
-| Overall churn rate | **26.6%** |
-| Monthly revenue lost to churn | calculated per run |
-| Highest-risk segment | Month-to-month contracts (**42.7% churn**) |
-| Lowest-risk segment | Two-year contracts (**2.9% churn**) |
-| New customer churn (0–12 mo) | highest across tenure buckets |
+All numbers below are produced directly by running `analytics/queries.sql` against the dbt-built DuckDB warehouse. Nothing is hardcoded.
+
+---
+
+### 1. One in four customers is leaving
+
+Out of 7,032 customers, **1,869 churned — a 26.6% churn rate**. That translates to **$139,130 in monthly recurring revenue walking out the door**, or roughly **$1.67M annualized**. For any subscription business this is the number that keeps executives up at night, because acquiring a new customer costs 5–7× more than retaining an existing one.
+
+---
+
+### 2. Contract type is the single strongest predictor of churn
+
+| Contract | Customers | Churned | Churn Rate | Monthly Revenue Lost |
+|----------|-----------|---------|------------|----------------------|
+| Month-to-month | 3,875 | 1,655 | **42.7%** | $120,847 |
+| One year | 1,472 | 166 | 11.3% | $14,118 |
+| Two year | 1,685 | 48 | **2.9%** | $4,165 |
+
+Month-to-month customers churn at **15× the rate** of two-year contract customers. The flexibility that attracts customers to short-term plans is the same thing that makes it easy for them to leave. **86% of total revenue loss comes from month-to-month contracts alone** ($1.45M/year out of $1.67M total). The clearest business lever here: incentivize customers to commit to longer contracts.
+
+---
+
+### 3. The first year is the most dangerous window
+
+| Tenure Bucket | Customers | Churned | Churn Rate |
+|---------------|-----------|---------|------------|
+| New (0–12 months) | 2,175 | 1,037 | **47.7%** |
+| Growing (13–24 months) | 1,024 | 294 | 28.7% |
+| Loyal (25+ months) | 3,833 | 538 | 14.0% |
+
+Nearly **half of new customers leave within their first year**. Customers who survive past 24 months churn at less than a third of that rate. This matches a known pattern in subscription businesses: if you can get a customer through the critical early period — with good onboarding, support, and engagement — retention improves dramatically. Retention campaigns should be front-loaded to the first 12 months.
+
+---
+
+### 4. How a customer pays predicts whether they'll stay
+
+| Payment Method | Customers | Churned | Churn Rate |
+|----------------|-----------|---------|------------|
+| Electronic check | 2,365 | 1,071 | **45.3%** |
+| Mailed check | 1,604 | 308 | 19.2% |
+| Bank transfer (automatic) | 1,542 | 258 | 16.7% |
+| Credit card (automatic) | 1,521 | 232 | 15.3% |
+
+Electronic check users churn at **3× the rate** of automatic payment users. Customers on automatic payments (bank transfer or credit card) are passive — the subscription continues unless they actively cancel. Electronic check requires active monthly effort, and customers who are paying attention to each payment are also more likely to question whether it's worth it. **Migrating electronic check users to auto-pay is a low-effort, high-impact retention move.**
+
+---
+
+### Why these findings matter beyond the numbers
+
+These three variables — contract type, tenure, and payment method — are all things a business can act on directly. They are not fixed traits like age or gender (which the data shows has nearly zero impact on churn). A retention strategy built around these findings would look like:
+
+- Lock in month-to-month customers with discounts for annual commitment
+- Trigger a proactive outreach campaign at months 3, 6, and 9 for new customers
+- Nudge electronic check users toward auto-pay at signup or renewal
 
 ---
 
