@@ -103,7 +103,7 @@ ChurnGuard/
 git clone https://github.com/Ayushhh26/ChurnGuard.git
 cd ChurnGuard
 python3 -m venv .venv && source .venv/bin/activate
-pip install dbt-duckdb
+pip install -r requirements.txt
 ```
 
 Download the dataset from [Kaggle](https://www.kaggle.com/datasets/blastchar/telco-customer-churn) and place it at `data/raw/telco_churn.csv`.
@@ -127,6 +127,15 @@ dbt docs generate --profiles-dir .
 dbt docs serve --profiles-dir .
 # opens http://localhost:8080 — click "Lineage Graph" in the bottom right
 ```
+
+### Run the Interactive Dashboard
+
+```bash
+streamlit run analytics/dashboard.py
+# opens http://localhost:8501
+```
+
+The dashboard shows overall churn metrics and a segment deep-dive: pick a contract type to see how tenure and payment method drive churn *within that segment*.
 
 ### Run dbt (Snowflake — production path)
 
