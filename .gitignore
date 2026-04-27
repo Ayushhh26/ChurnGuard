@@ -242,3 +242,13 @@ snowflake/.env
 
 # Internal planning doc — local only
 PLAN.md
+
+# macOS system files
+.DS_Store
+**/.DS_Store
+
+# dbt internal user file
+dbt/churnguard/.user.yml
+
+# Jupyter notebooks — local only
+*.ipynb
